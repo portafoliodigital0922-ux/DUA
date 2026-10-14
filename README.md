@@ -118,4 +118,4 @@ Define aquí la licencia del proyecto (por ejemplo MIT o CC BY 4.0) y agrega el 
 
 ## Autor
 
-MSc. Carlos Reinoso — Unidad Educativa "Otto Sharnow", Cangahua, Cayambe, Ecuador.
+E
