@@ -1,0 +1,505 @@
+<title>Coloreador DUA 2.2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: una sola columna de trabajo. Barra de herramientas arriba, hoja tipo Word al centro, observaciones debajo. */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --ink:#1c2530; --muted:#55606c; --line:#d3dae2;
+  --btn:#e4e9ee; --btn-ink:#1c2530; --primary:#1c2530; --primary-ink:#ffffff; --focus:#1A7CBB;
+  --paper:#ffffff; --paper-ink:#1b1f24; --paper-line:#c9d0d8;
+  --purple:#725196; --blue:#1A7CBB; --green:#128A43;
+  --ui:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12161b; --surface:#1a2027; --ink:#e6eaee; --muted:#9aa5b1; --line:#2d353e;
+  --btn:#29313a; --btn-ink:#e6eaee; --primary:#e6eaee; --primary-ink:#12161b; --focus:#6cb8ea;
+  --paper:#ffffff; --paper-ink:#1b1f24; --paper-line:#3a444f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161b; --surface:#1a2027; --ink:#e6eaee; --muted:#9aa5b1; --line:#2d353e;
+  --btn:#29313a; --btn-ink:#e6eaee; --primary:#e6eaee; --primary-ink:#12161b; --focus:#6cb8ea;
+  --paper:#ffffff; --paper-ink:#1b1f24; --paper-line:#3a444f; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--ui);padding-inline:16px}
+main{max-width:1040px;margin:0 auto;padding-block:24px 48px;display:flex;flex-direction:column;gap:18px}
+header h1{margin:0;font-size:clamp(1.5rem,3.4vw,2rem);line-height:1.15;text-wrap:balance}
+header p{margin:6px 0 0;color:var(--muted);max-width:68ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.toolbar{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center}
+.group{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.group + .group{padding-left:22px;border-left:1px solid var(--line)}
+@media(max-width:700px){.group + .group{padding-left:0;border-left:0}}
+button{font:inherit;font-weight:700;font-size:.9rem;border:0;border-radius:8px;padding:9px 13px;background:var(--btn);color:var(--btn-ink);cursor:pointer;min-height:40px}
+button:hover{filter:brightness(.95)}
+button.primary{background:var(--primary);color:var(--primary-ink)}
+button:focus-visible,#ed:focus-visible,input:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+label.chk{display:flex;gap:8px;align-items:center;font-size:.9rem;cursor:pointer}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--blue)}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:.85rem;font-weight:700;border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+.dot{width:11px;height:11px;border-radius:50%}
+.banner{font-size:.88rem;color:var(--muted);margin:0 0 10px}
+.sheet{background:var(--paper);color:var(--paper-ink);border:1px solid var(--paper-line);border-radius:4px;box-shadow:0 2px 14px #0000001f;overflow:auto}
+#ed{min-height:340px;max-height:70vh;overflow:auto;padding:clamp(16px,4vw,44px);font:16px/1.55 Calibri,Carlito,var(--ui);outline-offset:-3px;white-space:pre-wrap;overflow-wrap:anywhere}
+#ed:empty::before{content:"Pega aquí tu planificación (Ctrl+V). Se conserva el formato de Word.";color:#7b8591}
+#ed p,#ed div{margin:0 0 .55em}
+#ed li{margin:0 0 .3em}
+#ed table{border-collapse:collapse;max-width:100%}#ed td,#ed th{padding:3px 6px}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.stat{border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:.88rem}
+.stat b{font-variant-numeric:tabular-nums;font-size:1.05rem;margin-right:4px}
+h2{font-size:1.1rem;margin:0 0 10px}h3{font-size:.98rem;margin:16px 0 8px}
+.tablewrap{overflow-x:auto}
+table.obs{border-collapse:collapse;width:100%;font-size:.9rem;min-width:560px}
+.obs th,.obs td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:8px 10px}
+.obs th{font-size:.78rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.code{display:inline-block;background:#fff;border:1px solid #c9d0d8;border-radius:5px;padding:0 6px;font-weight:700;margin-right:4px;font-variant-numeric:tabular-nums}
+.warn{margin:10px 0 0;padding:10px 12px;border-radius:8px;border:1px solid var(--line);font-size:.9rem}
+.muted{color:var(--muted);font-size:.88rem}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--primary);color:var(--primary-ink);padding:10px 16px;border-radius:9px;font-weight:700;font-size:.9rem;max-width:calc(100% - 32px);opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+
+<main>
+  <header>
+    <h1>Coloreador DUA 2.2</h1>
+    <p>Pega tu planificación, pinta cada actividad según su código DUA y cópiala a Word con el formato original. Analiza cada línea con criterio DUA: respeta los códigos que ya tienes e interpreta y codifica el resto. Lo que no se pinta se explica abajo.</p>
+  </header>
+
+  <section class="panel" aria-label="Herramientas">
+    <div class="toolbar">
+      <div class="group" role="group" aria-label="Edición">
+        <button id="bCut" title="Cortar (Ctrl+X)">Cortar</button>
+        <button id="bCopy" title="Copiar (Ctrl+C)">Copiar</button>
+        <button id="bPaste" title="Pegar (Ctrl+V)">Pegar</button>
+        <button id="bUndo" title="Deshacer (Ctrl+Z)">Deshacer</button>
+        <button id="bRedo" title="Rehacer (Ctrl+Y)">Rehacer</button>
+        <button id="bAll" title="Seleccionar todo (Ctrl+A)">Seleccionar todo</button>
+        <button id="bClear">Limpiar</button>
+      </div>
+      <div class="group" role="group" aria-label="Pintado">
+        <button id="bColor" class="primary">Colorear</button>
+        <button id="bUncolor">Quitar colores</button>
+        <label class="chk"><input type="checkbox" id="chkSug" checked> Sugerir código si falta</label>
+      </div>
+      <div class="group" role="group" aria-label="Salida">
+        <button id="bWord" class="primary">Copiar todo para Word</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="chip"><span class="dot" style="background:var(--purple)"></span>Pautas 1–3 · Representación</span>
+      <span class="chip"><span class="dot" style="background:var(--blue)"></span>Pautas 4–6 · Acción y expresión</span>
+      <span class="chip"><span class="dot" style="background:var(--green)"></span>Pautas 7–9 · Compromiso</span>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Editor">
+    <p class="banner" id="banner">Texto de ejemplo cargado (Unidad 1, el carbono). Pulsa «Limpiar» y pega el tuyo.</p>
+    <div class="sheet"><div id="ed" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="Texto de la planificación"></div></div>
+  </section>
+
+  <section class="panel" aria-label="Observaciones">
+    <h2>Observaciones</h2>
+    <div class="stats" id="stats"></div>
+    <div id="obsBody"></div>
+    <p class="muted">La codificación del docente nunca se cambia. Cuando una línea combina principios, el texto toma el color del primer código (el dominante) y cada código conserva el suyo en negrita. Lo que la herramienta interpreta aparece como [DUA sugerido: …] y es una propuesta para revisión docente.</p>
+  </section>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const COLORS={purple:"#725196",blue:"#1A7CBB",green:"#128A43"};
+const MAXPT={1:3,2:5,3:4,4:2,5:3,6:4,7:3,8:4,9:3};
+const NAMES={purple:"Representación",blue:"Acción y expresión",green:"Compromiso"};
+const DESC={"1.1":"Personalizar la visualización","1.2":"Alternativas para información auditiva","1.3":"Alternativas para información visual","2.1":"Aclarar vocabulario y símbolos","2.2":"Aclarar sintaxis y estructura","2.3":"Decodificar texto y notación","2.4":"Comprensión entre idiomas","2.5":"Ilustrar con múltiples medios","3.1":"Activar conocimiento previo","3.2":"Resaltar patrones e ideas clave","3.3":"Guiar el procesamiento de la información","3.4":"Transferencia y generalización","4.1":"Variar métodos de respuesta","4.2":"Herramientas de asistencia","5.1":"Múltiples medios de comunicación","5.2":"Herramientas de construcción","5.3":"Apoyos graduados","6.1":"Establecer metas","6.2":"Planificar estrategias","6.3":"Gestionar información y recursos","6.4":"Monitorear el progreso","7.1":"Elección y autonomía","7.2":"Relevancia y contexto real","7.3":"Reducir amenazas y distracciones","8.1":"Hacer visibles las metas","8.2":"Variar demandas y recursos","8.3":"Colaboración y comunidad","8.4":"Retroalimentación orientada al dominio","9.1":"Expectativas que motivan","9.2":"Estrategias de afrontamiento","9.3":"Autoevaluación y reflexión"};
+const groupOf=c=>{const n=+c.split(".")[0];return n<=3?"purple":n<=6?"blue":"green"};
+const esc=s=>s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const CODE="[1-9]\\.\\d{1,2}";
+const pureRe=new RegExp("^\\s*(?:DUA\\s*:?\\s*)?"+CODE+"(?:\\s*(?:[-–—,;/]|\\sy\\s)\\s*"+CODE+")*\\s*$");
+const codeRe=new RegExp(CODE,"g");
+const ed=document.getElementById("ed");
+
+/* ---------- Reglas para sugerir códigos (guía de criterio del skill) ---------- */
+const RULES=[
+ ["1.1",/ampliar|zoom|tama[ñn]o de (letra|fuente)|contraste|ajustar el (tama[ñn]o|volumen)/i,2],
+ ["1.2",/subt[ií]tulo|transcripci[oó]n|escuchar|audio|podcast|voz alta/i,2],
+ ["1.3",/descripci[oó]n de (la |el )?(imagen|gr[aá]fico|mapa)|mapa(?! conceptual| mental)|gr[aá]fico|fotograf[ií]a|observar/i,1],
+ ["2.1",/vocabulario|glosario|definir|definici[oó]n|significado|t[eé]rmino|s[ií]mbolo|nomenclatura/i,2],
+ ["2.2",/estructura (del|de un) (texto|informe|ensayo)|partes (del|de un)|sintaxis/i,2],
+ ["2.3",/ecuaci[oó]n|notaci[oó]n|leer (una|la) tabla|interpretar (la |una )?(tabla|gr[aá]fico)|decodific|f[oó]rmulas? qu[ií]micas?|f[oó]rmula/i,2],
+ ["2.4",/traduc|quichua|kichwa|ingl[eé]s|otro idioma|biling/i,2],
+ ["2.5",/esquema|modelo|v[ií]deo|ilustra|imagen|ejemplo|diagrama|dibujo|simulaci[oó]n|diapositiva/i,1],
+ ["3.1",/^\s*(recordar|reconocer|activar|explorar)|saberes previos|conocimientos? previos?|lluvia de ideas|a partir de lo que|preguntas? (exploratorias|detonantes)/i,2.5],
+ ["3.2",/^\s*(identificar|clasificar|comparar|relacionar|analizar|diferenciar|distinguir|contrastar|categorizar)|patrones|rasgos|ideas clave|semejanzas|diferencias|observ\w*|describ\w*/i,2],
+ ["3.3",/mapa (conceptual|mental)|organizador|esquema|cuadro (sin[oó]ptico|comparativo)|tabla|paso a paso|l[ií]nea de tiempo|resumen|(?<![a-záéíóúñ])s[ií]ntesis/i,2.5],
+ ["3.4",/^\s*(aplicar|transferir|generalizar|resolver|extrapolar)|nuevo contexto|otras (situaciones|asignaturas)|vida real/i,1.5],
+ ["4.1",/laboratorio|experimento|manipul|materiales concretos|oralmente|dramatiz|representar|gestual|armar|salida de campo|demostrar|medir/i,2],
+ ["4.2",/calculadora|software|aplicaci[oó]n|\bapp\b|simulador|tecnolog|computador|tableta|celular|plataforma|digital|internet|\bTIC\b|Excel|PowerPoint|Canva|Kahoot|GeoGebra/i,2],
+ ["5.1",/^\s*(argumentar|exponer|debatir|redactar|escribir|elaborar|crear|presentar|comunicar|explicar|socializar)|infograf|exposici|\boral|ensayo|conclusi[oó]n|informe|cartel|afiche|dibujo|maqueta/i,1.5],
+ ["5.2",/organizador|procesador de texto|infograf|hoja de c[aá]lculo|dise[ñn]ar|herramienta|componer|mapa conceptual|esquema/i,1],
+ ["5.3",/ejemplos? resueltos?|\bgu[ií]a\b|andamiaje|modelado|pr[aá]ctica guiada|con ayuda|ejercicios?|practicar/i,2],
+ ["6.1",/\bmetas?\b|objetivos?|criterios? de (logro|[eé]xito)|prop[oó]sito/i,2],
+ ["6.2",/planificar|plan de|proponer una soluci[oó]n|resolver un problema|estrategia|dise[ñn]ar un plan|proyecto/i,2],
+ ["6.3",/organizar (datos|informaci[oó]n)|lista de cotejo|fuentes|tabla de registro|registrar|recopilar|investigar|datos/i,1],
+ ["6.4",/r[uú]brica|lista de cotejo|monitore|seguimiento|avance|progreso|verificar/i,2],
+ ["7.1",/elegir|elige|a elecci[oó]n|libremente|decidir|opcional|a su gusto|prefer/i,2],
+ ["7.2",/etiqueta|yogur|alimento|cotidian|vida diaria|comunidad|entorno|situaci[oó]n real|problema real|salud|familia|contexto|\breal\b|noticia|cercano|\bcaso\b/i,2],
+ ["7.3",/sin temor|ambiente seguro|rutina|sin distracciones|respetuos|confianza para preguntar/i,2],
+ ["8.1",/prop[oó]sito|para qu[eé]|recordar el objetivo/i,1],
+ ["8.2",/niveles|dificultad|seg[uú]n (su|el) ritmo|diferenciad|adaptad|a su ritmo|tiempo adicional/i,2],
+ ["8.3",/en parejas|parejas|en equipos?|equipos|\bgrupos?\b|grupal|colaborativ|cooperativ|debate|coevalua|entre pares|compa[ñn]ero|plenaria|mesa redonda|dialog\w*|conversa\w*|comparte\w*/i,2.5],
+ ["8.4",/retroalimentaci|feedback|correcci[oó]n|comentarios|valorar el avance/i,2],
+ ["9.1",/motivaci|confianza|valor del esfuerzo|expectativas|creencias|logros/i,2],
+ ["9.2",/frustraci|emociones|pedir ayuda|afrontamiento|estr[eé]s|respiraci[oó]n/i,2],
+ ["9.3",/autoevalu|reflexion|metacogni|diario|qu[eé] aprend|evaluar su (propio )?trabajo|autorreflexi/i,2]
+];
+const verbRe=/^[\s\d.\-–•·)]*([A-ZÁÉÍÓÚÑ][a-záéíóúñü]+(?:ar|er|ir))\b/;
+const STRUCT=[
+ [/^\s*Unidad\s+\d+/i,"Título de unidad: identifica la unidad, no describe lo que hace el estudiante."],
+ [/^\s*Tiempo estimado/i,"Dato de tiempo (períodos y minutos): información administrativa, sin opciones DUA que aplicar."],
+ [/^\s*[A-Z]{1,4}\.\d+(\.\d+)+/,"Destreza con criterio de desempeño del currículo (código CN/LL/M…): no es un código DUA."]
+];
+function classify(line,isHeading){
+  const t=line.trim(),words=t.split(/\s+/).length;
+  for(const [re,why] of STRUCT)if(re.test(t))return{kind:"neutral",why};
+  if(isHeading)return{kind:"neutral",why:"Encabezado del documento: es un título, no una actividad."};
+  const hasVerb=verbRe.test(t);
+  if(!hasVerb&&words<=14&&!/[.:;?!]$/.test(t))
+    return{kind:"neutral",why:words<=5?"Momento o fase de la planificación (título corto): organiza el documento, no propone una acción al estudiante.":"Título o tema de la unidad: enuncia el tema, no propone una acción al estudiante."};
+  if(words<4)return{kind:"neutral",why:"Texto demasiado breve para interpretarlo con el DUA."};
+  return{kind:"analizar"};
+}
+const VERBCLS=[
+ [/^[\s\d.\-–•·)]*(identificar|reconocer|nombrar|se[ñn]alar|enumerar|listar|observar|describir|determinar|inferir|deducir|ubicar|localizar|mencionar|clasificar|comparar|analizar)/i,"3.2","identifica rasgos e ideas clave"],
+ [/^[\s\d.\-–•·)]*(explicar|justificar|exponer|argumentar|responder|escribir|redactar|elaborar|crear|producir|dibujar|completar|presentar|resumir|concluir|opinar|narrar|comentar|plantear|formular)/i,"5.1","produce y comunica con un medio a elección del docente"],
+ [/^[\s\d.\-–•·)]*(leer|interpretar|descifrar)/i,"2.3","decodifica texto, tablas o símbolos"],
+ [/^[\s\d.\-–•·)]*(resolver|aplicar|calcular|utilizar|emplear|usar|desarrollar|transferir)/i,"3.4","aplica lo aprendido"],
+ [/^[\s\d.\-–•·)]*(experimentar|construir|realizar|ejecutar|medir|probar|armar|manipular|jugar)/i,"4.1","responde actuando o manipulando"],
+ [/^[\s\d.\-–•·)]*(revisar|verificar|corregir|comprobar|monitorear)/i,"6.4","monitorea su avance"],
+ [/^[\s\d.\-–•·)]*(reflexionar|valorar|autoevaluar|evaluar)/i,"9.3","reflexiona y se autoevalúa"],
+ [/^[\s\d.\-–•·)]*(dialogar|conversar|compartir|debatir|trabajar|colaborar|socializar)/i,"8.3","trabaja con otros"],
+ [/^[\s\d.\-–•·)]*(investigar|buscar|consultar|recopilar|registrar|anotar)/i,"6.3","gestiona información"],
+ [/^[\s\d.\-–•·)]*(planificar|organizar|dise[ñn]ar|proponer|planear)/i,"6.2","planifica estrategias"],
+ [/^[\s\d.\-–•·)]*(escoger|elegir|seleccionar)/i,"7.1","elige con autonomía"],
+ [/^[\s\d.\-–•·)]*(recordar|activar|explorar|preguntar)/i,"3.1","activa saberes previos"]
+];
+function isActivity(t){return classify(t,false).kind==="analizar"}
+function infer(text){
+  const sc=[];
+  RULES.forEach(([code,re,w],i)=>{const m=text.match(re);if(m)sc.push({code,w,i,hit:m[0].trim().toLowerCase()})});
+  if(!sc.length){
+    for(const [re,code,why] of VERBCLS){const m=text.match(re);if(m)return{codes:[code],reason:`${code} ${DESC[code]}: sin medio ni producto explícito, se interpretó por el verbo «${m[1].toLowerCase()}» (${why}).`}}
+    return null;
+  }
+  sc.sort((a,b)=>b.w-a.w||a.i-b.i);
+  const first=sc[0];
+  const pool=sc.slice(1).filter(x=>x.w>=Math.max(1,first.w-1.5));
+  const second=pool.find(x=>groupOf(x.code)!==groupOf(first.code))||pool[0];
+  const picked=second?[first,second]:[first];
+  return{codes:picked.map(p=>p.code),reason:picked.map(p=>`${p.code} ${DESC[p.code]} («${p.hit}»)`).join("; ")};
+}
+
+/* ---------- Estructura y pintado ---------- */
+const BLOCK=/^(P|DIV|UL|OL|LI|TABLE|H[1-6]|BLOCKQUOTE|PRE)$/;
+const BLOCKSEL="p,li,h1,h2,h3,h4,h5,h6,td,th,div,blockquote,ul,ol,table";
+function normalizeRoot(root){
+  let run=[];
+  const flush=()=>{
+    if(!run.length)return;
+    if(run.every(n=>n.nodeType===3&&!n.data.trim())){run.forEach(n=>n.remove());run=[];return}
+    const p=document.createElement("p");run[0].before(p);run.forEach(n=>p.appendChild(n));run=[];
+  };
+  [...root.childNodes].forEach(n=>{
+    if(n.nodeType===1&&BLOCK.test(n.nodeName))flush();else run.push(n);
+  });
+  flush();
+}
+function collect(block){
+  let str="";const items=[];
+  const walk=n=>{for(const c of n.childNodes){
+    if(c.nodeType===3){items.push({node:c,s:str.length,e:str.length+c.data.length});str+=c.data}
+    else if(c.nodeName==="BR")str+="\n";
+    else if(c.nodeType===1)walk(c);
+  }};
+  walk(block);return{str,items};
+}
+function unpaint(root){
+  root.querySelectorAll("[data-dua-sug]").forEach(e=>e.remove());
+  root.querySelectorAll("[data-dua]").forEach(e=>e.replaceWith(...e.childNodes));
+  root.normalize();
+}
+function mkSpan(text,color,bold){
+  const s=document.createElement("span");
+  s.setAttribute("data-dua","1");
+  s.style.color=color;if(bold)s.style.fontWeight="700";
+  s.textContent=text;return s;
+}
+function run(root){
+  const sug=document.getElementById("chkSug").checked;
+  const st={docente:0,mixtas:0,sugeridas:0,sinPintar:0,warn:[]};
+  const obs=[],skipped=[];
+  const blocks=[...root.querySelectorAll("p,li,h1,h2,h3,h4,h5,h6,td,th,div,blockquote")].filter(b=>!b.querySelector(BLOCKSEL));
+  for(const block of blocks){
+    const {str,items}=collect(block);
+    if(!str.trim())continue;
+    const isHeading=/^H[1-6]$/.test(block.nodeName);
+    const ranges=[];const labels=[];
+    let off=0;
+    for(const line of str.split("\n")){
+      const ls=off,le=off+line.length;off=le+1;
+      if(!line.trim())continue;
+      const lead=line.length-line.trimStart().length,trail=line.length-line.trimEnd().length;
+      const ts=ls+lead,te=le-trail;
+      const parens=[...line.matchAll(/\(([^()\n]*)\)/g)].filter(m=>pureRe.test(m[1]));
+      let codes=null,suggested=false,reason="";
+      if(parens.length){
+        codes=parens.flatMap(m=>[...m[1].matchAll(codeRe)].map(c=>({code:c[0],abs:ls+m.index+1+c.index})));
+        codes.forEach(c=>{const [p,v]=c.code.split(".").map(Number);if(v<1||v>MAXPT[p])st.warn.push(`El código ${c.code} no existe en el DUA 2.2 (se pintó por su pauta ${p}).`)});
+      }else{
+        const cl=classify(line,isHeading);
+        if(cl.kind==="neutral"){skipped.push({text:line.trim(),why:cl.why});st.sinPintar++;continue}
+        if(!sug){skipped.push({text:line.trim(),why:"No trae código y la opción «Sugerir código si falta» está desactivada."});st.sinPintar++;continue}
+        const r=infer(line);
+        if(!r){skipped.push({text:line.trim(),why:"No se encontró ninguna opción DUA que describa lo que hace el estudiante: no hay verbo de acción reconocible, medio, producto ni forma de trabajo."});st.sinPintar++;continue}
+        codes=r.codes.map(c=>({code:c}));suggested=true;reason=r.reason;
+      }
+      const dom=COLORS[groupOf(codes[0].code)];
+      const mixed=new Set(codes.map(c=>groupOf(c.code))).size>1;
+      if(suggested){
+        ranges.push({s:ts,e:te,color:dom,bold:false});
+        const last=[...items].reverse().find(it=>it.s<te&&it.e>ts);
+        if(last)labels.push({node:last.node,codes:codes.map(c=>c.code),color:dom});
+        obs.push({text:line.trim(),codes:codes.map(c=>c.code),reason});
+        st.sugeridas++;
+      }else{
+        st.docente++;if(mixed)st.mixtas++;
+        if(!mixed)ranges.push({s:ts,e:te,color:dom,bold:false});
+        else{
+          let pos=ts;
+          [...codes].sort((a,b)=>a.abs-b.abs).forEach(c=>{
+            if(c.abs>pos)ranges.push({s:pos,e:c.abs,color:dom,bold:false});
+            ranges.push({s:c.abs,e:c.abs+c.code.length,color:COLORS[groupOf(c.code)],bold:true});
+            pos=c.abs+c.code.length;
+          });
+          if(pos<te)ranges.push({s:pos,e:te,color:dom,bold:false});
+        }
+      }
+    }
+    const lastOf=new Map();
+    for(const it of items){
+      const rs=ranges.filter(r=>r.s<it.e&&r.e>it.s).sort((a,b)=>a.s-b.s);
+      if(!rs.length)continue;
+      const frag=document.createDocumentFragment();let pos=0;const d=it.node.data;
+      for(const r of rs){
+        const a=Math.max(r.s,it.s)-it.s,b=Math.min(r.e,it.e)-it.s;
+        if(a>pos)frag.appendChild(document.createTextNode(d.slice(pos,a)));
+        frag.appendChild(mkSpan(d.slice(a,b),r.color,r.bold));pos=b;
+      }
+      if(pos<d.length)frag.appendChild(document.createTextNode(d.slice(pos)));
+      const tail=frag.lastChild;it.node.replaceWith(frag);lastOf.set(it.node,tail);
+    }
+    for(const L of labels){
+      const lab=document.createElement("span");lab.setAttribute("data-dua-sug","1");
+      lab.style.color=L.color;
+      lab.appendChild(document.createTextNode(" [DUA sugerido: "));
+      L.codes.forEach((c,i)=>{if(i)lab.appendChild(document.createTextNode(" - "));const s=document.createElement("span");s.style.color=COLORS[groupOf(c)];s.style.fontWeight="700";s.textContent=c;lab.appendChild(s)});
+      lab.appendChild(document.createTextNode("]"));
+      (lastOf.get(L.node)||L.node).after(lab);
+    }
+  }
+  st.warn=[...new Set(st.warn)];
+  return{st,obs,skipped};
+}
+
+/* ---------- Observaciones ---------- */
+let lastObs=[];
+function chips(codes){return codes.map(c=>`<span class="code" style="color:${COLORS[groupOf(c)]}">${c}</span>`).join("")}
+const EMPTY={st:{docente:0,mixtas:0,sugeridas:0,sinPintar:0,warn:[]},obs:[],skipped:[]};
+function short(t){return esc(t.length>110?t.slice(0,110)+"…":t)}
+function render(res){
+  const {st,obs,skipped}=res;lastObs=obs;
+  document.getElementById("stats").innerHTML=
+   `<span class="stat"><b>${st.docente}</b>con código del docente</span>`+
+   `<span class="stat"><b>${st.mixtas}</b>combinan principios</span>`+
+   `<span class="stat"><b>${st.sugeridas}</b>interpretadas por el DUA</span>`+
+   `<span class="stat"><b>${st.sinPintar}</b>sin pintar</span>`;
+  let h="";
+  h+=`<h3>Texto interpretado y pintado por el DUA</h3>`;
+  h+=obs.length?`<div class="tablewrap"><table class="obs"><thead><tr><th>Texto</th><th>Código sugerido</th><th>Razón</th></tr></thead><tbody>`+
+     obs.map(o=>`<tr><td>${short(o.text)}</td><td>${chips(o.codes)}</td><td>${esc(o.reason)}</td></tr>`).join("")+
+     `</tbody></table></div><p><button id="bObs">Copiar tabla para Word</button></p>`
+     :`<p class="muted">Ninguna línea necesitó interpretación: todas traen código del docente.</p>`;
+  h+=`<h3>Texto que no se pintó y por qué</h3>`;
+  h+=skipped.length?`<div class="tablewrap"><table class="obs"><thead><tr><th>Texto</th><th>Motivo</th></tr></thead><tbody>`+
+     skipped.map(o=>`<tr><td>${short(o.text)}</td><td>${esc(o.why)}</td></tr>`).join("")+`</tbody></table></div>`
+     :`<p class="muted">Todo el texto quedó pintado.</p>`;
+  st.warn.forEach(w=>h+=`<div class="warn">${esc(w)}</div>`);
+  document.getElementById("obsBody").innerHTML=h;
+  const b=document.getElementById("bObs");if(b)b.onclick=copyObs;
+}
+function copyObs(){
+  const td='style="border:1px solid #999;padding:4px"';
+  const rows=lastObs.map(o=>`<tr><td ${td}>${esc(o.text)}</td><td ${td}>${o.codes.map(c=>`<b style="color:${COLORS[groupOf(c)]}">${c}</b>`).join(" - ")}</td><td ${td}>${esc(o.reason)}</td></tr>`).join("");
+  const html=`<table style="border-collapse:collapse"><tr><th ${td}>Texto</th><th ${td}>Código sugerido</th><th ${td}>Razón</th></tr>${rows}</table>`;
+  const text=lastObs.map(o=>[o.text,o.codes.join(" - "),o.reason].join("\t")).join("\n");
+  copyRich(html,text).then(ok=>toast(ok?"Tabla copiada. Pégala en Word.":"No se pudo copiar la tabla."));
+}
+
+/* ---------- Pintar / quitar (como una edición normal, se puede deshacer) ---------- */
+function setContent(html){
+  ed.focus();
+  const r=document.createRange();r.selectNodeContents(ed);
+  const s=getSelection();s.removeAllRanges();s.addRange(r);
+  let ok=false;try{ok=document.execCommand("insertHTML",false,html)}catch(e){}
+  if(!ok)ed.innerHTML=html;
+  s.collapseToEnd?.();
+}
+function working(){const d=document.createElement("div");d.innerHTML=ed.innerHTML;unpaint(d);normalizeRoot(d);return d}
+function colorize(){
+  if(!ed.textContent.trim()){toast("Pega primero el texto de la planificación.");return}
+  const d=working();const res=run(d);
+  setContent(d.innerHTML);render(res);
+  toast("Texto coloreado.");
+}
+function uncolor(){
+  const d=working();setContent(d.innerHTML);render(EMPTY);toast("Colores y sugerencias quitados.");
+}
+
+/* ---------- Pegado que conserva el formato ---------- */
+const ALLOWED=new Set("P DIV SPAN B STRONG I EM U S STRIKE SUB SUP BR UL OL LI TABLE THEAD TBODY TFOOT TR TD TH H1 H2 H3 H4 H5 H6 BLOCKQUOTE A COL COLGROUP CAPTION FONT".split(" "));
+const DROP=new Set("SCRIPT STYLE HEAD META LINK TITLE XML NOSCRIPT IFRAME OBJECT EMBED SVG IMG".split(" "));
+const CONTAINERS=new Set("TABLE THEAD TBODY TFOOT TR UL OL DIV BODY HTML COLGROUP".split(" "));
+const KEEP=/^(font-family|font-size|font-weight|font-style|text-decoration(-line)?|text-align|text-indent|line-height|margin(-top|-bottom|-left)?|color|background(-color)?|border[a-z-]*|width|padding[a-z-]*|vertical-align)$/;
+function cleanStyle(s){
+  return (s||"").split(";").map(x=>x.trim()).filter(Boolean).filter(x=>{
+    const i=x.indexOf(":");if(i<0)return false;
+    const p=x.slice(0,i).trim().toLowerCase(),v=x.slice(i+1).trim().toLowerCase();
+    return KEEP.test(p)&&!v.includes("mso-")&&v!=="windowtext"&&v!=="auto"&&v!=="inherit";
+  }).join("; ");
+}
+function cleanNode(n){
+  if(n.nodeType===3){
+    if(!n.data.trim()&&CONTAINERS.has(n.parentNode.nodeName))return"";
+    return esc(n.data.replace(/[\r\n\t ]+/g," "));
+  }
+  if(n.nodeType!==1)return"";
+  const tag=n.nodeName;
+  if(DROP.has(tag))return"";
+  const inner=[...n.childNodes].map(cleanNode).join("");
+  if(!ALLOWED.has(tag))return inner;
+  if(tag==="BR")return"<br>";
+  let attrs="";
+  const st=cleanStyle(n.getAttribute("style"));if(st)attrs+=` style="${esc(st)}"`;
+  ["colspan","rowspan"].forEach(a=>{if(n.getAttribute(a))attrs+=` ${a}="${esc(n.getAttribute(a))}"`});
+  if(tag==="A"&&/^https?:/i.test(n.getAttribute("href")||""))attrs+=` href="${esc(n.getAttribute("href"))}"`;
+  if(tag==="FONT"){const c=n.getAttribute("color");return `<span style="${c?`color:${esc(c)};`:""}${st}">${inner}</span>`}
+  return `<${tag.toLowerCase()}${attrs}>${inner}</${tag.toLowerCase()}>`;
+}
+function sanitize(html){
+  const doc=new DOMParser().parseFromString(html,"text/html");
+  return cleanNode(doc.body);
+}
+function textToHtml(t){
+  return t.replace(/\r\n?/g,"\n").split("\n").map(l=>`<p>${l?esc(l):"<br>"}</p>`).join("");
+}
+function insertPasted(html,text){
+  const out=(html&&html.trim())?sanitize(html):textToHtml(text||"");
+  if(!out)return;
+  ed.focus();
+  if(!document.execCommand("insertHTML",false,out))ed.insertAdjacentHTML("beforeend",out);
+  document.getElementById("banner").hidden=true;
+}
+ed.addEventListener("paste",e=>{e.preventDefault();const c=e.clipboardData;insertPasted(c.getData("text/html"),c.getData("text/plain"))});
+
+/* ---------- Copiar / cortar con formato limpio para Word ---------- */
+function plainOf(d){
+  const t=document.createElement("div");t.style.cssText="position:fixed;left:-9999px;top:0;white-space:pre-wrap";
+  t.innerHTML=d.innerHTML;document.body.appendChild(t);const s=t.innerText;t.remove();return s;
+}
+function selectionClone(){
+  const s=getSelection();
+  if(!s.rangeCount||s.isCollapsed)return null;
+  const r=s.getRangeAt(0);
+  if(!ed.contains(r.commonAncestorContainer))return null;
+  const d=document.createElement("div");d.appendChild(r.cloneContents());
+  d.querySelectorAll("[data-dua],[data-dua-sug]").forEach(e=>{e.removeAttribute("data-dua");e.removeAttribute("data-dua-sug")});
+  return d;
+}
+function onCopy(e,cut){
+  const d=selectionClone();if(!d)return;
+  e.clipboardData.setData("text/html","<html><body><!--StartFragment-->"+d.innerHTML+"<!--EndFragment--></body></html>");
+  e.clipboardData.setData("text/plain",plainOf(d));
+  e.preventDefault();
+  if(cut)document.execCommand("delete");
+}
+ed.addEventListener("copy",e=>onCopy(e,false));
+ed.addEventListener("cut",e=>onCopy(e,true));
+async function copyRich(html,text){
+  try{
+    await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([text],{type:"text/plain"})})]);
+    return true;
+  }catch(err){
+    const h=document.createElement("div");h.contentEditable="true";h.style.cssText="position:fixed;left:-9999px;top:0";h.innerHTML=html;document.body.appendChild(h);
+    const r=document.createRange();r.selectNodeContents(h);const s=getSelection();s.removeAllRanges();s.addRange(r);
+    let ok=false;try{ok=document.execCommand("copy")}catch(e){}
+    h.remove();return ok;
+  }
+}
+function selectAll(){ed.focus();const r=document.createRange();r.selectNodeContents(ed);const s=getSelection();s.removeAllRanges();s.addRange(r)}
+function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("on"),2600)}
+
+/* ---------- Botones ---------- */
+const $=id=>document.getElementById(id);
+document.querySelectorAll("button").forEach(b=>b.addEventListener("mousedown",e=>e.preventDefault()));
+$("bCut").onclick=()=>{ed.focus();if(!selectionClone())return toast("Selecciona primero el texto que quieres cortar.");document.execCommand("cut")};
+$("bCopy").onclick=()=>{ed.focus();if(!selectionClone())return toast("Selecciona primero el texto que quieres copiar.");document.execCommand("copy");toast("Copiado.")};
+$("bPaste").onclick=async()=>{
+  try{
+    const items=await navigator.clipboard.read();let html="",text="";
+    for(const it of items){
+      if(it.types.includes("text/html"))html=await (await it.getType("text/html")).text();
+      if(it.types.includes("text/plain"))text=await (await it.getType("text/plain")).text();
+    }
+    insertPasted(html,text);
+  }catch(e){toast("Tu navegador no permite pegar con el botón. Usa Ctrl+V (⌘+V en Mac) dentro del cuadro.");ed.focus()}
+};
+$("bUndo").onclick=()=>{ed.focus();document.execCommand("undo")};
+$("bRedo").onclick=()=>{ed.focus();document.execCommand("redo")};
+$("bAll").onclick=selectAll;
+$("bClear").onclick=()=>{ed.innerHTML="";$("banner").hidden=true;render(EMPTY);ed.focus()};
+$("bColor").onclick=colorize;
+$("bUncolor").onclick=uncolor;
+$("bWord").onclick=()=>{
+  if(!ed.textContent.trim())return toast("No hay texto para copiar.");
+  selectAll();
+  let ok=false;try{ok=document.execCommand("copy")}catch(e){}
+  getSelection().collapseToEnd();
+  if(ok)toast("Copiado con formato y colores. Pégalo en Word con Ctrl+V.");
+  else{const d=document.createElement("div");d.innerHTML=ed.innerHTML;unpaintKeep(d);copyRich(d.innerHTML,plainOf(d)).then(k=>toast(k?"Copiado con formato y colores. Pégalo en Word.":"No se pudo copiar. Selecciona el texto y usa Ctrl+C."))}
+};
+function unpaintKeep(d){d.querySelectorAll("[data-dua],[data-dua-sug]").forEach(e=>{e.removeAttribute("data-dua");e.removeAttribute("data-dua-sug")})}
+
+/* ---------- Ejemplo inicial ---------- */
+const EJEMPLO=`Unidad 1
+El carbono es un elemento indispensable para la vida
+Tiempo estimado: 4 períodos (~160 min)
+CN.4.3.18. — 4 períodos
+Anticipación del conocimiento
+Recordar los elementos químicos que conocen y su presencia en los seres vivos a partir de la etiqueta nutricional de un yogurt (proteínas 3,5 g; carbohidratos 12 g; grasas 2 g) y responder: ¿cuál de estos nutrientes contiene carbono? (7.1 - 2.1)
+Identificar en una lista de compuestos (agua H2O, glucosa C6H12O6, sal NaCl, dióxido de carbono CO2) cuáles contienen carbono y anotarlos en el cuaderno. (2.1 - 3.1)
+
+Construcción
+Explicar por qué el carbono es el elemento base de la química de la vida a partir de la lectura 'El carbono es un elemento indispensable para la vida' (texto breve que describe sus cuatro enlaces y su capacidad de formar cadenas) y elaborar un esquema con tres razones. (3.1 - 1.1)
+Clasificar las biomoléculas (carbohidratos, proteínas, lípidos y ácidos nucleicos) según su composición química y presencia de carbono, usando una tabla con ejemplos de alimentos: pan (carbohidrato), huevo (proteína), aceite (lípido), ADN (ácido nucleico). (5.1 - 2.1)
+Elaborar en parejas un mapa conceptual sobre los tipos de biomoléculas y autoevaluar su trabajo con una lista de cotejo.
+
+Consolidación
+Argumentar la importancia del carbono para los seres vivos a partir del análisis de un caso: 'En un ecosistema marino, el fitoplancton absorbe CO2 disuelto y lo convierte en materia orgánica; los peces se alimentan de él'. Escribir una conclusión sobre el papel del carbono en la cadena trófica. (5.1 - 9.1)
+Resolver un problema práctico: dada una lista de biomoléculas (glucosa, insulina, colesterol, ADN), identificar cuál contiene carbono y explicar su función en el organismo, y luego crear una infografía con esta información. (6.1 - 5.1)`;
+(function init(){
+  const first=EJEMPLO.split("\n").map(l=>l?`<p>${esc(l)}</p>`:"<p><br></p>").join("");
+  const d=document.createElement("div");d.innerHTML=first;
+  const res=run(d);ed.innerHTML=d.innerHTML;render(res);
+})();
+</script>
